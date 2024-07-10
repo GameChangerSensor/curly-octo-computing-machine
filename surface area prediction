@@ -1,0 +1,164 @@
+import pandas as pd
+import numpy as np
+import random
+import tensorflow as tf
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.optimizers import Adam
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import matplotlib.pyplot as plt
+
+# 시드 고정
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ['TF_DETERMINISTIC_OPS'] = '1'
+
+# 시드 설정
+set_seed()
+
+# Load data from Group A
+data_a = pd.read_excel(r"C:\Users\82102\OneDrive\바탕 화면\set1,set2,set3_new.xlsx")
+data_a = data_a[["impedance", "Interpolated Surface area (m2/g)"]]
+
+# Load data from Group B
+data_b = pd.read_excel(r"C:\Users\82102\OneDrive\바탕 화면\Pd sensor impedance data.xlsx")
+data_b = data_b[["impedance", "Interpolated Surface area (m2/g)"]]
+
+# Function to preprocess data
+def preprocess_data(data):
+    X = data["impedance"].values.reshape(-1, 1)
+    y = data["Interpolated Surface area (m2/g)"].values.reshape(-1, 1)
+    scaler_X = MinMaxScaler()
+    scaler_y = MinMaxScaler()
+    X_scaled = scaler_X.fit_transform(X)
+    y_scaled = scaler_y.fit_transform(y)
+    return X_scaled, y_scaled, scaler_X, scaler_y
+
+X_a_scaled, y_a_scaled, scaler_X_a, scaler_y_a = preprocess_data(data_a)
+X_b_scaled, y_b_scaled, scaler_X_b, scaler_y_b = preprocess_data(data_b)
+
+# Split dataset
+X_a_train, X_a_test, y_a_train, y_a_test = train_test_split(X_a_scaled, y_a_scaled, test_size=0.2, random_state=42)
+X_b_train, X_b_test, y_b_train, y_b_test = train_test_split(X_b_scaled, y_b_scaled, test_size=0.2, random_state=42)
+
+# Create model
+def create_model(input_shape):
+    inputs = Input(shape=input_shape)
+    dense = Dense(64, activation='relu')(inputs)
+    output = Dense(1)(dense)
+    model = Model(inputs, output)
+    return model
+
+# Create and compile model
+def create_and_compile_model():
+    model = create_model(input_shape=(1,))
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error', metrics=['mean_squared_error', 'mae'])
+    return model
+
+# Train both models
+model_a = create_and_compile_model()
+history_a = model_a.fit(X_a_train, y_a_train, epochs=300, batch_size=32, validation_split=0.1)
+
+model_b = create_and_compile_model()
+history_b = model_b.fit(X_b_train, y_b_train, epochs=300, batch_size=32, validation_split=0.1)
+
+# Evaluate the models on the test set
+test_loss_a, test_mse_a, test_mae_a = model_a.evaluate(X_a_test, y_a_test)
+test_loss_b, test_mse_b, test_mae_b = model_b.evaluate(X_b_test, y_b_test)
+
+# Predict the values
+predictions_a = model_a.predict(X_a_test)
+predictions_b = model_b.predict(X_b_test)
+
+# Create a DataFrame to store the predictions and true values
+df_predictions_a = pd.DataFrame({
+    'True Values A': scaler_y_a.inverse_transform(y_a_test).flatten(),
+    'Predicted Values A': scaler_y_a.inverse_transform(predictions_a).flatten()
+})
+
+df_predictions_b = pd.DataFrame({
+    'True Values B': scaler_y_b.inverse_transform(y_b_test).flatten(),
+    'Predicted Values B': scaler_y_b.inverse_transform(predictions_b).flatten()
+})
+
+# Save the predictions to an Excel file
+with pd.ExcelWriter('predictions.xlsx') as writer:
+    df_predictions_a.to_excel(writer, sheet_name='Predictions_A', index=False)
+    df_predictions_b.to_excel(writer, sheet_name='Predictions_B', index=False)
+
+# Create a DataFrame to store the loss values
+epochs = range(1, 301)
+df_loss = pd.DataFrame({
+    'Epoch': epochs,
+    'Training Loss A': history_a.history['loss'],
+    'Validation Loss A': history_a.history['val_loss'],
+    'Training Loss B': history_b.history['loss'],
+    'Validation Loss B': history_b.history['val_loss'],
+    'Test Loss A': [test_loss_a] * 300,  # Repeat test loss values for each epoch
+    'Test Loss B': [test_loss_b] * 300
+})
+
+# Save the loss values to an Excel file
+df_loss.to_excel('loss_values.xlsx', index=False)
+
+# Plot the loss values
+plt.subplot(2, 2, 1)
+plt.plot(epochs, history_a.history['loss'], label='Training Loss of Au bare elt', linewidth=2)
+plt.plot(epochs, history_a.history['val_loss'], label='Validation Loss of Au bare elt', linewidth=2)
+plt.title('Au bare electrode sensor', fontsize=10)
+plt.xlabel('Epoch', fontsize=14)
+plt.ylabel('Loss', fontsize=14)
+plt.legend(fontsize=7)
+
+plt.subplot(2, 2, 2)
+plt.plot(epochs, history_b.history['loss'], label='Training Loss of Pd modified elt', linewidth=2)
+plt.plot(epochs, history_b.history['val_loss'], label='Validation Loss of Pd modified elt', linewidth=2)
+plt.title('Pd modified electrode sensor', fontsize=10)
+plt.xlabel('Epoch', fontsize=14)
+plt.ylabel('Loss', fontsize=14)
+plt.legend(fontsize=7)
+
+# Plot the predictions vs true values for Group A
+plt.subplot(2, 2, 3)
+plt.scatter(df_predictions_a['True Values A'], df_predictions_a['Predicted Values A'], alpha=0.5)
+plt.plot([df_predictions_a['True Values A'].min(), df_predictions_a['True Values A'].max()],
+         [df_predictions_a['True Values A'].min(), df_predictions_a['True Values A'].max()], 'r--')
+plt.title('Au elt', fontsize=10)
+plt.xlabel('True Values Au elt', fontsize=14)
+plt.ylabel('Predicted Values Au elt', fontsize=14)
+
+# Plot the predictions vs true values for Group B
+plt.subplot(2, 2, 4)
+plt.scatter(df_predictions_b['True Values B'], df_predictions_b['Predicted Values B'], alpha=0.5)
+plt.plot([df_predictions_b['True Values B'].min(), df_predictions_b['True Values B'].max()],
+         [df_predictions_b['True Values B'].min(), df_predictions_b['True Values B'].max()], 'r--')
+plt.title('Pd/Au elt', fontsize=10)
+plt.xlabel('True Values Pd/Au elt', fontsize=14)
+plt.ylabel('Predicted Values Pd/Au elt', fontsize=14)
+
+plt.tight_layout()
+plt.show()
+
+# Print the test loss values
+print(f'Test Loss for Au bare electrode sensor: {test_loss_a}')
+print(f'Test Loss for Pd modified electrode sensor: {test_loss_b}')
+
+# Calculate RMSE
+rmse_a = np.sqrt(test_mse_a)
+rmse_b = np.sqrt(test_mse_b)
+
+print(f'RMSE for Au bare electrode sensor: {rmse_a}')
+print(f'RMSE for Pd modified electrode sensor: {rmse_b}')
+
+# Calculate MAPE
+mape_a = np.mean(np.abs((df_predictions_a['True Values A'] - df_predictions_a['Predicted Values A']) / df_predictions_a['True Values A'])) * 100
+mape_b = np.mean(np.abs((df_predictions_b['True Values B'] - df_predictions_b['Predicted Values B']) / df_predictions_b['True Values B'])) * 100
+
+print(f'MAPE for Au bare electrode sensor: {mape_a}%')
+print(f'MAPE for Pd modified electrode sensor: {mape_b}%')
