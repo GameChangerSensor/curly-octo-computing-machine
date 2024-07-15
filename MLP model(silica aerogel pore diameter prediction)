@@ -124,26 +124,6 @@ plt.xlabel('Epoch', fontsize=14)
 plt.ylabel('Loss', fontsize=14)
 plt.legend(fontsize=7)
 
-# Plot the predictions vs true values for Group A
-plt.subplot(2, 2, 3)
-plt.scatter(df_predictions_a['True Values A'], df_predictions_a['Predicted Values A'], alpha=0.5)
-plt.plot([df_predictions_a['True Values A'].min(), df_predictions_a['True Values A'].max()],
-         [df_predictions_a['True Values A'].min(), df_predictions_a['True Values A'].max()], 'r--')
-plt.title('Au elt', fontsize=10)
-plt.xlabel('True Values Au elt', fontsize=14)
-plt.ylabel('Predicted Values Au elt', fontsize=14)
-
-# Plot the predictions vs true values for Group B
-plt.subplot(2, 2, 4)
-plt.scatter(df_predictions_b['True Values B'], df_predictions_b['Predicted Values B'], alpha=0.5)
-plt.plot([df_predictions_b['True Values B'].min(), df_predictions_b['True Values B'].max()],
-         [df_predictions_b['True Values B'].min(), df_predictions_b['True Values B'].max()], 'r--')
-plt.title('Pd/Au elt', fontsize=10)
-plt.xlabel('True Values Pd/Au elt', fontsize=14)
-plt.ylabel('Predicted Values Pd/Au elt', fontsize=14)
-
-plt.tight_layout()
-plt.show()
 
 # Print the test loss values
 print(f'Test Loss for Au bare electrode sensor: {test_loss_a}')
