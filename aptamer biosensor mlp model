@@ -1,0 +1,104 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error, accuracy_score, classification_report, r2_score
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+import matplotlib.pyplot as plt
+
+# 데이터 불러오기 및 전처리 함수
+def load_and_preprocess_data(file_path):
+    # 엑셀 파일 읽기
+    data = pd.read_excel(file_path)
+    
+    # 필요한 열 선택
+    frequency = data['frequency'].values.astype(float)
+    impedance_change_rate = data['impedance_change_rate'].values.astype(float)
+    concentration = data['concentration'].values.astype(int)
+    
+    # 라벨을 0, 1, 2로 변환
+    label_map = {0: 0, 10: 1, 20: 2}
+    y = np.array([label_map[c] for c in concentration])
+    
+    # 특징 데이터 생성 (주파수와 임피던스 변화율)
+    X = np.column_stack((frequency, impedance_change_rate))
+    
+    # 데이터 정규화
+    scaler = MinMaxScaler()
+    X_scaled = scaler.fit_transform(X)
+    
+    return X_scaled, y, scaler
+
+# 모델 생성 함수
+def create_mlp_model(input_shape):
+    model = Sequential()
+    model.add(Dense(64, input_dim=input_shape, activation='relu'))
+    model.add(Dense(3, activation='softmax'))
+    model.compile(optimizer=Adam(learning_rate=0.001), loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    return model
+
+# 파일 경로 지정
+file_path = r"C:\Users\82102\OneDrive\바탕 화면\Aptamer binding data\combined_data7.xlsx"
+
+# 데이터 불러오기 및 전처리
+X, y, scaler = load_and_preprocess_data(file_path)
+
+# 데이터 분할
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 모델 생성 및 학습
+model = create_mlp_model(X_train.shape[1])
+history = model.fit(X_train, y_train, epochs=500, batch_size=32, validation_split=0.1)
+
+# 모델 평가
+y_pred_prob = model.predict(X_test)
+y_pred = np.argmax(y_pred_prob, axis=1)
+accuracy = accuracy_score(y_test, y_pred)
+mae = mean_absolute_error(y_test, y_pred)
+rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+print(f'Test Accuracy: {accuracy * 100:.5f}%')
+print(f'Test MAE: {mae:.5f}')
+print(f'Test RMSE: {rmse:.5f}')
+print(classification_report(y_test, y_pred, target_names=['0', '10', '20']))
+
+# 학습 및 검증 손실 시각화
+plt.figure(figsize=(14, 6))
+
+plt.subplot(1, 2, 1)
+plt.plot(history.history['loss'], label='Training Loss', linewidth=2)
+plt.plot(history.history['val_loss'], label='Validation Loss', linewidth=2)
+plt.xlabel('Epochs', fontsize=14)
+plt.ylabel('Loss', fontsize=14)
+plt.legend(fontsize=12)
+plt.title('Training and Validation Loss', fontsize=16)
+
+plt.subplot(1, 2, 2)
+plt.scatter(y_test, y_pred, alpha=0.5)
+plt.plot([min(y_test), max(y_test)], [min(y_test), max(y_test)], 'r--')
+plt.xlabel('True Concentration', fontsize=14)
+plt.ylabel('Predicted Concentration', fontsize=14)
+plt.title(f'R^2 Score: {r2_score(y_test, y_pred):.2f}', fontsize=16)
+
+plt.tight_layout()
+plt.show()
+
+# 새로운 데이터 예측 함수
+def predict_concentration(impedance_change_rate, frequency_value):
+    # 새로운 입력 데이터 전처리
+    new_input = np.array([[frequency_value, impedance_change_rate]])
+    new_input_scaled = scaler.transform(new_input)
+    
+    # 예측
+    prediction_prob = model.predict(new_input_scaled)
+    prediction = np.argmax(prediction_prob, axis=1)
+    
+    # 예측 값 다시 0, 10, 20으로 변환
+    reverse_label_map = {0: 0, 1: 10, 2: 20}
+    return reverse_label_map[prediction[0]]
+
+# 예시: 임피던스 변화율이 30%이고 주파수가 50Hz일 때 농도 예측
+predicted_concentration = predict_concentration(30, 50)
+print(f'Predicted Concentration: {predicted_concentration}')
