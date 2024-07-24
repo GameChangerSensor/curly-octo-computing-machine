@@ -23,7 +23,7 @@ def set_seed(seed=42):
 set_seed()
 
 # Load data from Group A
-data_a = pd.read_excel(r"C:\Users\82102\OneDrive\바탕 화면\set1,set2,set3_new.xlsx")
+data_a = pd.read_excel(r"C:\Users\82102\OneDrive\바탕 화면\Au sensor impedance data.xlsx")
 data_a = data_a[["impedance", "Interpolated Pore Volume (cm3/g)"]]
 
 # Load data from Group B
