@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import random
 import tensorflow as tf
 import os
 from sklearn.model_selection import train_test_split
@@ -11,28 +10,17 @@ from tensorflow.keras.optimizers import Adam
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 
-# 시드 고정
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    tf.random.set_seed(seed)
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    os.environ['TF_DETERMINISTIC_OPS'] = '1'
-
-# 시드 설정
-set_seed()
-
 # Load data from Group A
-data_a = pd.read_excel(r"C:\Users\82102\OneDrive\바탕 화면\Au sensor impedance data.xlsx")
-data_a = data_a[["impedance", "Interpolated Pore Volume (cm3/g)"]]
+data_a = pd.read_excel(r"C:\Users\Au sensor impedance data.xlsx")
+data_a = data_a[["impedance", "Time", "Frequency", "Interpolated Pore Volume (cm3/g)"]]  # Explicitly include 'Time' column
 
 # Load data from Group B
-data_b = pd.read_excel(r"C:\Users\82102\OneDrive\바탕 화면\Pd sensor impedance data.xlsx")
-data_b = data_b[["impedance", "Interpolated Pore Volume (cm3/g)"]]
+data_b = pd.read_excel(r"C:\Users\Pd sensor impedance data..xlsx")
+data_b = data_b[["impedance", "Time", "Frequency", "Interpolated Pore Volume (cm3/g)"]]  # Explicitly include 'Time' column
 
 # Function to preprocess data
 def preprocess_data(data):
-    X = data["impedance"].values.reshape(-1, 1)
+    X = data[["impedance", "Time", "Frequency"]].values  # Use 'impedance', 'Time', 'Frequency' as features
     y = data["Interpolated Pore Volume (cm3/g)"].values.reshape(-1, 1)
     scaler_X = MinMaxScaler()
     scaler_y = MinMaxScaler()
@@ -50,14 +38,14 @@ X_b_train, X_b_test, y_b_train, y_b_test = train_test_split(X_b_scaled, y_b_scal
 # Create model
 def create_model(input_shape):
     inputs = Input(shape=input_shape)
-    dense = Dense(64, activation='relu')(inputs)
-    output = Dense(1)(dense)
+    dense1 = Dense(64, activation='relu')(inputs)
+    output = Dense(1)(dense1)
     model = Model(inputs, output)
     return model
 
 # Create and compile model
 def create_and_compile_model():
-    model = create_model(input_shape=(1,))
+    model = create_model(input_shape=(3,))  # 3 input variables: 'impedance', 'Time', 'Frequency'
     model.compile(optimizer=Adam(learning_rate=0.001), loss='mean_squared_error', metrics=['mean_squared_error', 'mae'])
     return model
 
@@ -87,11 +75,6 @@ df_predictions_b = pd.DataFrame({
     'Predicted Values B': scaler_y_b.inverse_transform(predictions_b).flatten()
 })
 
-# Save the predictions to an Excel file
-with pd.ExcelWriter('predictions.xlsx') as writer:
-    df_predictions_a.to_excel(writer, sheet_name='Predictions_A', index=False)
-    df_predictions_b.to_excel(writer, sheet_name='Predictions_B', index=False)
-
 # Create a DataFrame to store the loss values
 epochs = range(1, 301)
 df_loss = pd.DataFrame({
@@ -104,26 +87,50 @@ df_loss = pd.DataFrame({
     'Test Loss B': [test_loss_b] * 300
 })
 
-# Save the loss values to an Excel file
-df_loss.to_excel('loss_values.xlsx', index=False)
-
 # Plot the loss values
+plt.figure(figsize=(12, 8))
+
 plt.subplot(2, 2, 1)
-plt.plot(epochs, history_a.history['loss'], label='Training Loss of Au bare elt', linewidth=2)
-plt.plot(epochs, history_a.history['val_loss'], label='Validation Loss of Au bare elt', linewidth=2)
+plt.plot(epochs, history_a.history['loss'], label='Training Loss of Au bare elt', linewidth=4)
+plt.plot(epochs, history_a.history['val_loss'], label='Validation Loss of Au bare elt', linewidth=4)
 plt.title('Au bare electrode sensor', fontsize=10)
 plt.xlabel('Epoch', fontsize=14)
 plt.ylabel('Loss', fontsize=14)
 plt.legend(fontsize=7)
+plt.grid(linewidth=1.5)
 
 plt.subplot(2, 2, 2)
-plt.plot(epochs, history_b.history['loss'], label='Training Loss of Pd modified elt', linewidth=2)
-plt.plot(epochs, history_b.history['val_loss'], label='Validation Loss of Pd modified elt', linewidth=2)
+plt.plot(epochs, history_b.history['loss'], label='Training Loss of Pd modified elt', linewidth=4)
+plt.plot(epochs, history_b.history['val_loss'], label='Validation Loss of Pd modified elt', linewidth=4)
 plt.title('Pd modified electrode sensor', fontsize=10)
 plt.xlabel('Epoch', fontsize=14)
 plt.ylabel('Loss', fontsize=14)
 plt.legend(fontsize=7)
+plt.grid(linewidth=1.5)
 
+# Plot the predictions vs true values for Group A
+plt.subplot(2, 2, 3)
+plt.scatter(df_predictions_a['True Values A'], df_predictions_a['Predicted Values A'], alpha=0.5)
+plt.plot([df_predictions_a['True Values A'].min(), df_predictions_a['True Values A'].max()],
+         [df_predictions_a['True Values A'].min(), df_predictions_a['True Values A'].max()], 'r--', linewidth=2)
+plt.title('Au elt', fontsize=10)
+plt.xlabel('True Values Au elt', fontsize=14)
+plt.ylabel('Predicted Values Au elt', fontsize=14)
+plt.grid(linewidth=1.5)
+
+# Plot the predictions vs true values for Group B
+plt.subplot(2, 2, 4)
+plt.scatter(df_predictions_b['True Values B'], df_predictions_b['Predicted Values B'], alpha=0.5)
+plt.plot([df_predictions_b['True Values B'].min(), df_predictions_b['True Values B'].max()],
+         [df_predictions_b['True Values B'].min(), df_predictions_b['True Values B'].max()], 'r--', linewidth=2)
+plt.title('Pd/Au elt', fontsize=10)
+plt.xlabel('True Values Pd/Au elt', fontsize=14)
+plt.ylabel('Predicted Values Pd/Au elt', fontsize=14)
+plt.grid(linewidth=1.5)
+
+plt.tight_layout()
+plt.savefig(r"C:\Users\loss_values2.png")
+plt.show()
 
 # Print the test loss values
 print(f'Test Loss for Au bare electrode sensor: {test_loss_a}')
