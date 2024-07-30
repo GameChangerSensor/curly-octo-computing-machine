@@ -129,7 +129,7 @@ plt.ylabel('Predicted Values Pd/Au elt', fontsize=14)
 plt.grid(linewidth=1.5)
 
 plt.tight_layout()
-plt.savefig(r"C:\Users\82102\OneDrive\바탕 화면\loss_values2.png")
+plt.savefig(r"C:\Users\loss_values2.png")
 plt.show()
 
 # Print the test loss values
