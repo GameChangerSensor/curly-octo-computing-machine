@@ -11,11 +11,11 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 import matplotlib.pyplot as plt
 
 # Load data from Group A
-data_a = pd.read_excel(r"C:\Users\Au sensor impedance data.xlsx")
+data_a = pd.read_excel(r"C:\Users\Au sensor data.xlsx")
 data_a = data_a[["impedance", "Time", "Frequency", "Interpolated Pore Volume (cm3/g)"]]  # Explicitly include 'Time' column
 
 # Load data from Group B
-data_b = pd.read_excel(r"C:\Users\Pd sensor impedance data..xlsx")
+data_b = pd.read_excel(r"C:\Users\Pd sensor data.xlsx")
 data_b = data_b[["impedance", "Time", "Frequency", "Interpolated Pore Volume (cm3/g)"]]  # Explicitly include 'Time' column
 
 # Function to preprocess data
