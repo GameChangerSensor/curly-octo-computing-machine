@@ -4,5 +4,5 @@ silica aerogel prediction
 input data: impedance data , aerogel properties (exel file)
 
 
-using impedance dato to predict silica aerogel properties with MLP, small transformer, and LSTM: performance comparison
+using impedance dato to predict silica aerogel properties with MLP, small transformer, and LSTM: performance comparison.
 input data: Pd sensor impedance data , aerogel properties (exel file)
