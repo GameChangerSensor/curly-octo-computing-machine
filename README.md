@@ -7,6 +7,6 @@
 1.Predicting silica aerogel properties using each sensor's data with an MLP model
 
 
-2.Using Pd/Au sensor data or bare Au sensor data to predict silica aerogel properties with MLP, small transformer, and LSTM models: performance comparison.
+2.Using Peach sensor's data to predict silica aerogel properties with MLP, small transformer, and LSTM models: performance comparison.
 
  
