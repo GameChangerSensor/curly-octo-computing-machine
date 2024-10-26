@@ -1,6 +1,6 @@
 # curly-octo-computing-machine
 
--The Bare Au sensor data consists of impedance, frequency, and time data obtained through bare electrodes sensors during the aging process, along with the properties data of the final synthesized aerogels collected after the Au sensor data collection during the aging process.
+-The Bare Au sensor data includes impedance, frequency, and time measurements obtained from bare electrode sensors during the aging process, as well as the properties of the final synthesized aerogels collected after data acquisition.
 
 -The Pd-modified sensor data includes impedance, frequency, and time measurements obtained from Pd/Au electrode sensors during the aging process, as well as the properties of the final synthesized aerogels collected after the data acquisition.
 
